@@ -48,8 +48,8 @@ public class PurchaseTests {
     public void setUp() {
         basePage = new BasePage();
         prop = basePage.initializeProperties();
-        String userName = setting("TEST_USERNAME", "username");
-        String password = setting("TEST_PASSWORD", "password");
+        String userName = prop.getProperty("username");
+        String password = prop.getProperty("password");
         String url = prop.getProperty("url");
         String browserName = prop.getProperty("browser");
 
@@ -58,19 +58,6 @@ public class PurchaseTests {
         homePage = new HomePage(driver);
 
         loginPage.loginToClientDashBoard(userName, password);
-    }
-
-    private String setting(String environmentVariable, String propertyName) {
-        String value = System.getenv(environmentVariable);
-        if (value == null || value.isBlank()) {
-            value = prop.getProperty(propertyName);
-        }
-        if (value == null || value.isBlank()) {
-            throw new IllegalStateException(
-                    "Set " + environmentVariable + " or provide '" + propertyName
-                            + "' in config.properties");
-        }
-        return value;
     }
 
     @Test(dataProvider = "excelData")
