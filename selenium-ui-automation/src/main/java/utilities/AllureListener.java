@@ -1,6 +1,6 @@
 package utilities;
 
-import base.BasePage;
+import base.DriverFactory;
 import io.qameta.allure.Allure;
 import io.qameta.allure.testng.AllureTestNg;
 import org.openqa.selenium.OutputType;
@@ -17,7 +17,7 @@ public class AllureListener extends AllureTestNg {
     public void onTestFailure(ITestResult result) {
         super.onTestFailure(result);
 
-        WebDriver driver = BasePage.getDriver();
+        WebDriver driver = DriverFactory.getDriverOrNull();
         if (!(driver instanceof TakesScreenshot screenshotDriver)) {
             return;
         }

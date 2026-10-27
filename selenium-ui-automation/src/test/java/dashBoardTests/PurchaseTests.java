@@ -1,7 +1,6 @@
 package dashBoardTests;
 
-import base.BasePage;
-import org.openqa.selenium.WebDriver;
+import base.DriverFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -13,49 +12,34 @@ import utilities.ExcelReader;
 import utilities.AllureListener;
 
 import java.lang.reflect.Method;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Properties;
+import utilities.ConfigReader;
 
 @Listeners(AllureListener.class)
 public class PurchaseTests {
-    WebDriver driver;
-    Properties prop;
-    BasePage basePage;
     LoginPage loginPage;
     HomePage homePage;
-
-    private static final Path TEST_DATA_FILE = resolveTestDataFile();
-
-    private static Path resolveTestDataFile() {
-        Path repositoryRelative = Path.of("selenium-ui-automation", "src", "main", "java",
-                "testData", "testData_ClientDashBoard.xlsx");
-        if (Files.isRegularFile(repositoryRelative)) {
-            return repositoryRelative;
-        }
-        return Path.of("src", "main", "java", "testData", "testData_ClientDashBoard.xlsx");
-    }
+    private static final String TEST_DATA_RESOURCE = "testData/testData_ClientDashBoard.xlsx";
 
     @DataProvider(name = "excelData")
     public Object[][] excelData(Method testMethod) {
         return ExcelReader.readTestData(
-                TEST_DATA_FILE,
+                TEST_DATA_RESOURCE,
                 testMethod.getDeclaringClass().getSimpleName(),
                 testMethod.getName());
     }
 
     @BeforeMethod
     public void setUp() {
-        basePage = new BasePage();
-        prop = basePage.initializeProperties();
-        String userName = prop.getProperty("username");
-        String password = prop.getProperty("password");
-        String url = prop.getProperty("url");
-        String browserName = prop.getProperty("browser");
+        ConfigReader config = ConfigReader.load();
+        String userName = config.getRequired("username");
+        String password = config.getRequired("password");
 
-        driver = basePage.initializeDriver(url, browserName);
-        loginPage = new LoginPage(driver);
-        homePage = new HomePage(driver);
+        DriverFactory.startDriver(
+                config.getRequired("browser"),
+                config.getRequired("url"),
+                config.getBoolean("headless", false));
+        loginPage = new LoginPage(DriverFactory.getDriver());
+        homePage = new HomePage(DriverFactory.getDriver());
 
         loginPage.loginToClientDashBoard(userName, password);
     }
@@ -65,8 +49,8 @@ public class PurchaseTests {
         homePage.addProductToCart(productName);
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void teardown() {
-        driver.quit();
+        DriverFactory.quitDriver();
     }
 }

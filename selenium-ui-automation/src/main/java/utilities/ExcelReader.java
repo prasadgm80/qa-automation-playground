@@ -10,8 +10,6 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -21,17 +19,19 @@ public final class ExcelReader {
     private ExcelReader() {
     }
 
-    public static Object[][] readTestData(Path workbookPath, String sheetName, String testCaseName) {
-        Objects.requireNonNull(workbookPath, "workbookPath must not be null");
+    public static Object[][] readTestData(String workbookResource, String sheetName, String testCaseName) {
+        Objects.requireNonNull(workbookResource, "workbookResource must not be null");
         Objects.requireNonNull(sheetName, "sheetName must not be null");
         Objects.requireNonNull(testCaseName, "testCaseName must not be null");
 
-        if (!Files.isRegularFile(workbookPath)) {
-            throw new IllegalStateException("Excel workbook not found: " + workbookPath.toAbsolutePath());
+        InputStream workbookStream = ExcelReader.class.getClassLoader()
+                .getResourceAsStream(workbookResource);
+        if (workbookStream == null) {
+            throw new IllegalStateException(
+                    "Excel workbook not found on the classpath: " + workbookResource);
         }
 
-        try (InputStream input = Files.newInputStream(workbookPath);
-             Workbook workbook = WorkbookFactory.create(input)) {
+        try (InputStream input = workbookStream; Workbook workbook = WorkbookFactory.create(input)) {
             Sheet sheet = workbook.getSheet(sheetName);
             if (sheet == null) {
                 throw new IllegalStateException("Excel sheet not found: " + sheetName);
@@ -68,7 +68,7 @@ public final class ExcelReader {
             }
             return testData.toArray(new Object[0][]);
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to read Excel workbook: " + workbookPath, e);
+            throw new IllegalStateException("Unable to read Excel workbook: " + workbookResource, e);
         }
     }
 
