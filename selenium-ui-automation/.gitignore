@@ -1,0 +1,6 @@
+target/
+*.class
+.allure/
+allure-results/
+allure-report/
+src/main/java/config/config.properties

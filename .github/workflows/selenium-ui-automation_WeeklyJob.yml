@@ -1,0 +1,42 @@
+name: Selenium UI Automation Weekly Job
+
+on:
+  schedule:
+    - cron: '0 18 * * 0' # Runs every Sunday at 11:30 IST
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
+      TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+      HEADLESS: "true"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Build Maven reactor
+        run: mvn --batch-mode --no-transfer-progress -pl selenium-ui-automation -am -DskipTests package
+
+      - name: Run Selenium tests
+        if: ${{ env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
+        run: mvn --batch-mode --no-transfer-progress -pl selenium-ui-automation -am test
+
+      - name: Skip browser tests when credentials are not configured
+        if: ${{ env.TEST_USERNAME == '' || env.TEST_PASSWORD == '' }}
+        run: echo "Set TEST_USERNAME and TEST_PASSWORD repository secrets to enable browser tests."
+
+      - name: Upload Allure results
+        if: ${{ always() && env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: selenium-ui-automation/target/allure-results
+          if-no-files-found: warn
