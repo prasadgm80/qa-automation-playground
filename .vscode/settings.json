@@ -1,0 +1,17 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/playwright-api-automation/.venv/Scripts/python.exe",
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.cwd": "${workspaceFolder}/playwright-api-automation",
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
+  "python-envs.defaultEnvManager": "ms-python.python:venv",
+  "python-envs.pythonProjects": [
+    {
+      "path": "playwright-api-automation",
+      "envManager": "ms-python.python:venv",
+      "packageManager": "ms-python.python:pip"
+    }
+  ]
+}

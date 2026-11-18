@@ -1,0 +1,8 @@
+# Runtime / test dependencies
+playwright>=1.55
+pytest>=8.4
+pytest-html>=4.1
+python-dotenv>=1.1
+
+# Code quality
+ruff>=0.12

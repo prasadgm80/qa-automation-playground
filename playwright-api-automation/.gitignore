@@ -1,0 +1,15 @@
+# Secrets
+.env
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Reports
+reports/
+
+# Leftovers from the former TypeScript setup
+node_modules/
