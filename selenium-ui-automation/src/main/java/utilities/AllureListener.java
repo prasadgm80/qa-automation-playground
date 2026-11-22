@@ -18,18 +18,7 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
 
-/**
- * Adds rich, automatic diagnostics to the Allure report.
- *
- * <p>On every failure it attaches, when available:
- * <ul>
- *     <li>a full-page screenshot,</li>
- *     <li>the page HTML source, and</li>
- *     <li>the browser console log.</li>
- * </ul>
- * Each attachment is best-effort: if one cannot be captured it is skipped and the
- * others are still attached.
- */
+/** Allure listener that attaches a screenshot, page source, and browser log on failure. */
 public class AllureListener extends AllureTestNg {
     private static final Logger log = LoggerFactory.getLogger(AllureListener.class);
 
@@ -53,6 +42,7 @@ public class AllureListener extends AllureTestNg {
         attachBrowserLogs(driver);
     }
 
+    /** Attaches a PNG screenshot, or an error note if capture fails. */
     private void attachScreenshot(WebDriver driver, String testName) {
         if (!(driver instanceof TakesScreenshot screenshotDriver)) {
             return;
@@ -74,6 +64,7 @@ public class AllureListener extends AllureTestNg {
         }
     }
 
+    /** Attaches the current page HTML source. */
     private void attachPageSource(WebDriver driver) {
         try {
             String source = driver.getPageSource();
@@ -86,6 +77,7 @@ public class AllureListener extends AllureTestNg {
         }
     }
 
+    /** Attaches the browser console log, if the browser exposes it. */
     private void attachBrowserLogs(WebDriver driver) {
         try {
             LogEntries entries = driver.manage().logs().get(LogType.BROWSER);

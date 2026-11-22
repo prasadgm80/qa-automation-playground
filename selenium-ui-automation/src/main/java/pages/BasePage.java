@@ -4,12 +4,7 @@ import utilities.Utils;
 
 import java.util.Objects;
 
-/**
- * Base class for all page objects.
- *
- * <p>Holds the single shared {@link Utils} instance for the current test thread,
- * so every page reuses the same driver and explicit wait instead of creating its own.
- */
+/** Base for page objects: holds the shared {@link Utils} for the current test thread. */
 public abstract class BasePage {
     protected final Utils utils;
 

@@ -13,13 +13,10 @@ import utilities.Utils;
 import java.lang.reflect.Method;
 
 /**
- * Shared test lifecycle: starts the browser, logs in, exposes ready-to-use page
- * objects, and shuts the browser down afterwards.
+ * Shared test lifecycle: starts the browser, logs in, exposes page objects, and quits.
  *
- * <p>Tests run in parallel (see {@code testng.xml}), and with {@code parallel="methods"}
- * TestNG shares one test-class instance across threads. To keep each test isolated,
- * the per-test state (driver helper and page objects) is stored in {@link ThreadLocal}
- * fields and exposed through the {@code loginPage()} / {@code homePage()} accessors.
+ * <p>Tests run in parallel, so per-test state is kept in {@link ThreadLocal} fields
+ * and accessed via {@code loginPage()} / {@code homePage()}.
  */
 public abstract class BaseTest {
     private static final Logger log = LoggerFactory.getLogger(BaseTest.class);
@@ -27,6 +24,7 @@ public abstract class BaseTest {
     private final ThreadLocal<LoginPage> loginPage = new ThreadLocal<>();
     private final ThreadLocal<HomePage> homePage = new ThreadLocal<>();
 
+    /** Starts the browser, builds page objects, and logs in before each test. */
     @BeforeMethod
     public void setUp(Method method) {
         log.info("Starting test: {}", method.getName());
@@ -47,14 +45,17 @@ public abstract class BaseTest {
                 config.getRequired("password"));
     }
 
+    /** The login page for the current test thread. */
     protected LoginPage loginPage() {
         return loginPage.get();
     }
 
+    /** The home page for the current test thread. */
     protected HomePage homePage() {
         return homePage.get();
     }
 
+    /** Logs the outcome and quits the browser after each test. */
     @AfterMethod(alwaysRun = true)
     public void tearDown(ITestResult result) {
         if (result.getStatus() == ITestResult.FAILURE) {

@@ -15,10 +15,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+/** Reads TestNG data-provider rows for a given test from an Excel sheet. */
 public final class ExcelReader {
     private ExcelReader() {
     }
 
+    /** Returns the non-blank argument rows for {@code testCaseName} in the given sheet. */
     public static Object[][] readTestData(String workbookResource, String sheetName, String testCaseName) {
         Objects.requireNonNull(workbookResource, "workbookResource must not be null");
         Objects.requireNonNull(sheetName, "sheetName must not be null");

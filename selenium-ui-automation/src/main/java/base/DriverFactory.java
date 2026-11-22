@@ -18,6 +18,7 @@ public final class DriverFactory {
     private DriverFactory() {
     }
 
+    /** Starts a fresh browser session on the current thread and navigates to {@code url}. */
     public static WebDriver startDriver(String browserName, String url, boolean headless) {
         Objects.requireNonNull(browserName, "browserName must not be null");
         Objects.requireNonNull(url, "url must not be null");
@@ -69,6 +70,7 @@ public final class DriverFactory {
         }
     }
 
+    /** Returns the current thread's driver, or throws if none is active. */
     public static WebDriver getDriver() {
         WebDriver driver = DRIVER.get();
         if (driver == null) {
@@ -77,10 +79,12 @@ public final class DriverFactory {
         return driver;
     }
 
+    /** Returns the current thread's driver, or {@code null} if none is active. */
     public static WebDriver getDriverOrNull() {
         return DRIVER.get();
     }
 
+    /** Quits the current thread's driver (if any) and clears it. */
     public static void quitDriver() {
         WebDriver driver = DRIVER.get();
         try {

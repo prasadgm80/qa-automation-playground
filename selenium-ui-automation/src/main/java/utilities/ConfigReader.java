@@ -16,10 +16,7 @@ public final class ConfigReader {
         this.properties = properties;
     }
 
-    /**
-     * Returns the shared configuration, loading it from the classpath only once.
-     * Subsequent calls reuse the same instance instead of re-reading the file.
-     */
+    /** Returns the shared configuration, loading it from the classpath only once. */
     public static ConfigReader load() {
         ConfigReader local = instance;
         if (local == null) {
@@ -56,6 +53,7 @@ public final class ConfigReader {
         return new ConfigReader(properties);
     }
 
+    /** Returns the value for {@code key} (environment variable takes priority), or {@code null}. */
     public String get(String key) {
         String environmentVariable = environmentVariableFor(key);
         String value = System.getenv(environmentVariable);
@@ -65,6 +63,7 @@ public final class ConfigReader {
         return value == null ? null : value.trim();
     }
 
+    /** Returns the value for {@code key}, or throws if it is missing. */
     public String getRequired(String key) {
         String value = get(key);
         if (value == null || value.isBlank()) {
@@ -75,6 +74,7 @@ public final class ConfigReader {
         return value;
     }
 
+    /** Returns the boolean value for {@code key}, or {@code defaultValue} if unset. */
     public boolean getBoolean(String key, boolean defaultValue) {
         String value = get(key);
         if (value == null || value.isBlank()) {
@@ -87,6 +87,7 @@ public final class ConfigReader {
         return Boolean.parseBoolean(value);
     }
 
+    /** Returns the integer value for {@code key}, or {@code defaultValue} if unset. */
     public int getInt(String key, int defaultValue) {
         String value = get(key);
         if (value == null || value.isBlank()) {
