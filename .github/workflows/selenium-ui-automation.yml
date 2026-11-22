@@ -52,6 +52,15 @@ jobs:
       - name: Build Maven reactor
         run: mvn --batch-mode --no-transfer-progress -pl selenium-ui-automation -am -DskipTests package
 
+      # Reports only whether the secrets reached this run, never their values.
+      - name: Check test credentials
+        run: |
+          if [ -n "$TEST_USERNAME" ] && [ -n "$TEST_PASSWORD" ]; then
+            echo "Credentials detected: tests will run."
+          else
+            echo "::warning::TEST_USERNAME/TEST_PASSWORD are empty in this run. Confirm they are saved as Actions *repository* secrets (not Environment/Dependabot secrets or Variables)."
+          fi
+
       - name: Run Selenium tests
         if: ${{ env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
         run: mvn --batch-mode --no-transfer-progress -pl selenium-ui-automation -am test

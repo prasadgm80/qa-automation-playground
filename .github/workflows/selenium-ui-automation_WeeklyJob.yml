@@ -40,6 +40,15 @@ jobs:
       - name: Build Maven reactor
         run: mvn --batch-mode --no-transfer-progress -pl selenium-ui-automation -am -DskipTests package
 
+      # Reports only whether the secrets reached this run, never their values.
+      - name: Check test credentials
+        run: |
+          if [ -n "$TEST_USERNAME" ] && [ -n "$TEST_PASSWORD" ]; then
+            echo "Credentials detected: tests will run."
+          else
+            echo "::warning::TEST_USERNAME/TEST_PASSWORD are empty in this run. Confirm they are saved as Actions *repository* secrets (not Environment/Dependabot secrets or Variables)."
+          fi
+
       - name: Run Selenium tests
         if: ${{ env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
         run: mvn --batch-mode --no-transfer-progress -pl selenium-ui-automation -am test
@@ -107,6 +116,10 @@ jobs:
 
       - name: Package reports
         run: |
+          # Gmail blocks attachments containing HTML/JS, so drop the rendered
+          # Allure report (still available as a workflow artifact) and email only
+          # the plain-text Surefire results and raw Allure results.
+          rm -rf all-reports/allure-report-* 2>/dev/null || true
           if [ -d all-reports ] && [ -n "$(ls -A all-reports 2>/dev/null)" ]; then
             zip -r reports.zip all-reports
           else
@@ -131,6 +144,8 @@ jobs:
             Overall result: ${{ needs.build-and-test.result }}
             Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-            The attached reports.zip contains the Allure HTML report and Surefire
-            results for each browser.
+            The attached reports.zip contains the plain-text Surefire results and
+            raw Allure results for each browser. The full interactive Allure HTML
+            report is available on the run page above under "Artifacts"
+            (allure-report-chrome / allure-report-firefox).
           attachments: reports.zip
