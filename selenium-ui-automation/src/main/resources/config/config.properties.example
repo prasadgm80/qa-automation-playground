@@ -3,3 +3,10 @@ url=https://rahulshettyacademy.com/client/
 headless=false
 username=
 password=
+
+# Seconds to wait for an element before failing (explicit wait timeout).
+explicit.wait.seconds=10
+
+# How many times a single Selenium action (click, sendKeys, ...) is retried
+# before it fails. 1 means no retry. Default is 3.
+action.retry.count=3

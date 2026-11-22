@@ -1,16 +1,12 @@
 package pages;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
 import utilities.Utils;
 
-public class HomePage {
-    private final WebDriver driver;
-    private final Utils utils;
+public class HomePage extends BasePage {
 
-    public HomePage(WebDriver driver) {
-        this.driver = java.util.Objects.requireNonNull(driver, "driver must not be null");
-        this.utils = new Utils(driver);
+    public HomePage(Utils utils) {
+        super(utils);
     }
 
     public By addToCart(String productName) {

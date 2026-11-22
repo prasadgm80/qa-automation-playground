@@ -1,16 +1,11 @@
 package pages;
 
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import utilities.Utils;
 
-import java.util.Objects;
-
-public class LoginPage {
-    private final WebDriver driver;
-    private final Utils utils;
+public class LoginPage extends BasePage {
 
     @FindBy(id = "userEmail")
     private WebElement userId;
@@ -21,10 +16,9 @@ public class LoginPage {
     @FindBy(id = "login")
     private WebElement loginButton;
 
-    public LoginPage(WebDriver driver) {
-        this.driver = Objects.requireNonNull(driver, "driver must not be null");
-        this.utils = new Utils(driver);
-        PageFactory.initElements(driver, this);
+    public LoginPage(Utils utils) {
+        super(utils);
+        PageFactory.initElements(utils.getDriver(), this);
     }
 
     public void loginToClientDashBoard(String id, String passwordText) {

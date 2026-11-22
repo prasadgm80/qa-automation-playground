@@ -49,17 +49,22 @@ public final class ExcelReader {
                     continue;
                 }
 
-                int lastDataColumn = findLastDataColumn(row, formatter, evaluator);
-                if (lastDataColumn < 1) {
+                // Collect only the non-blank cells. Blank cells (e.g. a column used by
+                // another test but not this one) are skipped, so each test receives
+                // exactly the arguments it needs and gaps do not shift the values.
+                List<Object> arguments = new ArrayList<>();
+                for (int columnIndex = 1; columnIndex < row.getLastCellNum(); columnIndex++) {
+                    String value = cellValue(row.getCell(columnIndex), formatter, evaluator);
+                    if (!value.isEmpty()) {
+                        arguments.add(value);
+                    }
+                }
+
+                if (arguments.isEmpty()) {
                     throw new IllegalStateException(
                             "No test data found for '" + testCaseName + "' in sheet '" + sheetName + "'");
                 }
-
-                Object[] arguments = new Object[lastDataColumn];
-                for (int columnIndex = 1; columnIndex <= lastDataColumn; columnIndex++) {
-                    arguments[columnIndex - 1] = cellValue(row.getCell(columnIndex), formatter, evaluator);
-                }
-                testData.add(arguments);
+                testData.add(arguments.toArray());
             }
 
             if (testData.isEmpty()) {
@@ -70,15 +75,6 @@ public final class ExcelReader {
         } catch (IOException e) {
             throw new IllegalStateException("Unable to read Excel workbook: " + workbookResource, e);
         }
-    }
-
-    private static int findLastDataColumn(Row row, DataFormatter formatter, FormulaEvaluator evaluator) {
-        for (int columnIndex = row.getLastCellNum() - 1; columnIndex >= 1; columnIndex--) {
-            if (!cellValue(row.getCell(columnIndex), formatter, evaluator).isEmpty()) {
-                return columnIndex;
-            }
-        }
-        return -1;
     }
 
     private static String cellValue(Cell cell, DataFormatter formatter, FormulaEvaluator evaluator) {

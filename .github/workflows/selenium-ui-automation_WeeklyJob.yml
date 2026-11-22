@@ -7,10 +7,15 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chrome, firefox]
     env:
       TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
       TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
       HEADLESS: "true"
+      BROWSER: ${{ matrix.browser }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -37,6 +42,6 @@ jobs:
         if: ${{ always() && env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: allure-results
+          name: allure-results-${{ matrix.browser }}
           path: selenium-ui-automation/target/allure-results
           if-no-files-found: warn
