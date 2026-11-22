@@ -2,15 +2,40 @@ name: Selenium UI Automation
 
 on:
   push:
+    branches: [main]
+    paths:
+      - 'selenium-ui-automation/**'
+      - '.github/workflows/selenium-ui-automation.yml'
   pull_request:
+    paths:
+      - 'selenium-ui-automation/**'
+      - '.github/workflows/selenium-ui-automation.yml'
+
+# Least-privilege token: read code, write check runs, annotate PRs with test results.
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+# Cancel older runs for the same branch/PR when a new commit is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
+    name: Tests (${{ matrix.browser }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chrome, firefox]
     env:
       TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
       TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
       HEADLESS: "true"
+      BROWSER: ${{ matrix.browser }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -22,8 +47,19 @@ jobs:
           java-version: "17"
           cache: maven
 
+      # Chrome and Firefox are pre-installed on ubuntu-latest, and Selenium Manager
+      # resolves the matching driver automatically, so no driver download is needed.
       - name: Build Maven reactor
         run: mvn --batch-mode --no-transfer-progress -pl selenium-ui-automation -am -DskipTests package
+
+      # Reports only whether the secrets reached this run, never their values.
+      - name: Check test credentials
+        run: |
+          if [ -n "$TEST_USERNAME" ] && [ -n "$TEST_PASSWORD" ]; then
+            echo "Credentials detected: tests will run."
+          else
+            echo "::warning::TEST_USERNAME/TEST_PASSWORD are empty in this run. Confirm they are saved as Actions *repository* secrets (not Environment/Dependabot secrets or Variables)."
+          fi
 
       - name: Run Selenium tests
         if: ${{ env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
@@ -33,10 +69,28 @@ jobs:
         if: ${{ env.TEST_USERNAME == '' || env.TEST_PASSWORD == '' }}
         run: echo "Set TEST_USERNAME and TEST_PASSWORD repository secrets to enable browser tests."
 
+      - name: Publish test results
+        if: ${{ always() && env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: selenium-ui-automation/target/surefire-reports/*.xml
+          check_name: Test Results (${{ matrix.browser }})
+          fail_on_failure: false
+
       - name: Upload Allure results
         if: ${{ always() && env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: allure-results
+          name: allure-results-${{ matrix.browser }}
           path: selenium-ui-automation/target/allure-results
           if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload Surefire reports
+        if: ${{ always() && env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-${{ matrix.browser }}
+          path: selenium-ui-automation/target/surefire-reports
+          if-no-files-found: warn
+          retention-days: 14

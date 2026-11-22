@@ -1,0 +1,38 @@
+# === IDE / editors ===
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+
+# === Java / Maven build output ===
+target/
+*.class
+
+# === Allure reports ===
+.allure/
+allure-results/
+allure-report/
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# === Playwright / test output ===
+playwright-api-automation/reports/
+node_modules/
+
+# === OS files ===
+.DS_Store
+Thumbs.db
+
+# === Local secrets / config ===
+**/config/config.properties

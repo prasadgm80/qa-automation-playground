@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<!--
+  Parallel execution configuration.
+
+  parallel="methods"            -> every @Test method runs in its own thread.
+  thread-count                  -> maximum number of tests running at the same time.
+  data-provider-thread-count    -> maximum number of data-provider rows running in parallel.
+
+  Each thread gets its own WebDriver (see DriverFactory's ThreadLocal), so tests
+  stay isolated. To scale to hundreds of tests, raise thread-count to match the
+  CPU/grid capacity of the machine running the suite.
+-->
+<suite name="Selenium UI Automation Suite" parallel="methods" thread-count="4" data-provider-thread-count="4">
+    <listeners>
+        <listener class-name="utilities.AllureListener"/>
+    </listeners>
+    <test name="Dashboard Tests">
+        <packages>
+            <package name="dashBoardTests"/>
+        </packages>
+    </test>
+</suite>

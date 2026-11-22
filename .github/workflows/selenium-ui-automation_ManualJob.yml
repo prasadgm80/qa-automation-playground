@@ -3,13 +3,24 @@ name: Selenium UI Automation Manual Job
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   build-and-test:
+    name: Tests (${{ matrix.browser }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chrome, firefox]
     env:
       TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
       TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
       HEADLESS: "true"
+      BROWSER: ${{ matrix.browser }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -21,8 +32,19 @@ jobs:
           java-version: "17"
           cache: maven
 
+      # Chrome and Firefox are pre-installed on ubuntu-latest, and Selenium Manager
+      # resolves the matching driver automatically, so no driver download is needed.
       - name: Build Maven reactor
         run: mvn --batch-mode --no-transfer-progress -pl selenium-ui-automation -am -DskipTests package
+
+      # Reports only whether the secrets reached this run, never their values.
+      - name: Check test credentials
+        run: |
+          if [ -n "$TEST_USERNAME" ] && [ -n "$TEST_PASSWORD" ]; then
+            echo "Credentials detected: tests will run."
+          else
+            echo "::warning::TEST_USERNAME/TEST_PASSWORD are empty in this run. Confirm they are saved as Actions *repository* secrets (not Environment/Dependabot secrets or Variables)."
+          fi
 
       - name: Run Selenium tests
         if: ${{ env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
@@ -32,10 +54,98 @@ jobs:
         if: ${{ env.TEST_USERNAME == '' || env.TEST_PASSWORD == '' }}
         run: echo "Set TEST_USERNAME and TEST_PASSWORD repository secrets to enable browser tests."
 
+      # Generate the HTML report even if tests failed, so artifacts/email always include it.
+      - name: Generate Allure report
+        if: ${{ always() && env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
+        run: mvn --batch-mode --no-transfer-progress -pl selenium-ui-automation allure:report
+
+      - name: Publish test results
+        if: ${{ always() && env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: selenium-ui-automation/target/surefire-reports/*.xml
+          check_name: Test Results (${{ matrix.browser }})
+          fail_on_failure: false
+
       - name: Upload Allure results
         if: ${{ always() && env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: allure-results
+          name: allure-results-${{ matrix.browser }}
           path: selenium-ui-automation/target/allure-results
           if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload Allure HTML report
+        if: ${{ always() && env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report-${{ matrix.browser }}
+          path: selenium-ui-automation/target/site/allure-maven-plugin
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload Surefire reports
+        if: ${{ always() && env.TEST_USERNAME != '' && env.TEST_PASSWORD != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-${{ matrix.browser }}
+          path: selenium-ui-automation/target/surefire-reports
+          if-no-files-found: warn
+          retention-days: 14
+
+  # Emails one combined report bundle (all browsers) to the configured address.
+  # Requires MAIL_USERNAME and MAIL_PASSWORD secrets (Gmail address + App Password).
+  email-report:
+    name: Email report
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: ${{ always() }}
+    env:
+      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+    steps:
+      - name: Download all reports
+        uses: actions/download-artifact@v4
+        with:
+          path: all-reports
+        continue-on-error: true
+
+      - name: Package reports
+        run: |
+          # Gmail blocks attachments that contain HTML/JS, so drop the rendered
+          # Allure report and any HTML files (e.g. page-source attachments). The
+          # full interactive report stays available as a workflow artifact. The
+          # zip keeps the plain-text Surefire results, screenshots, and raw
+          # Allure JSON results.
+          rm -rf all-reports/allure-report-* 2>/dev/null || true
+          find all-reports -type f \( -name '*.html' -o -name '*.htm' -o -name '*.js' \) -delete 2>/dev/null || true
+          if [ -d all-reports ] && [ -n "$(ls -A all-reports 2>/dev/null)" ]; then
+            zip -r reports.zip all-reports
+          else
+            echo "No reports were produced."
+            echo "NO_REPORTS=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Send report email
+        if: ${{ env.MAIL_USERNAME != '' && env.MAIL_PASSWORD != '' && env.NO_REPORTS != 'true' }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          from: Selenium CI <${{ secrets.MAIL_USERNAME }}>
+          to: prasadgm80@gmail.com
+          subject: "Selenium UI Automation (Manual) - result: ${{ needs.build-and-test.result }}"
+          body: |
+            Workflow: ${{ github.workflow }}
+            Overall result: ${{ needs.build-and-test.result }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            The attached reports.zip contains the plain-text Surefire results and
+            raw Allure results for each browser. The full interactive Allure HTML
+            report is available on the run page above under "Artifacts"
+            (allure-report-chrome / allure-report-firefox).
+          attachments: reports.zip
