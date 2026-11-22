@@ -116,10 +116,13 @@ jobs:
 
       - name: Package reports
         run: |
-          # Gmail blocks attachments containing HTML/JS, so drop the rendered
-          # Allure report (still available as a workflow artifact) and email only
-          # the plain-text Surefire results and raw Allure results.
+          # Gmail blocks attachments that contain HTML/JS, so drop the rendered
+          # Allure report and any HTML files (e.g. page-source attachments). The
+          # full interactive report stays available as a workflow artifact. The
+          # zip keeps the plain-text Surefire results, screenshots, and raw
+          # Allure JSON results.
           rm -rf all-reports/allure-report-* 2>/dev/null || true
+          find all-reports -type f \( -name '*.html' -o -name '*.htm' -o -name '*.js' \) -delete 2>/dev/null || true
           if [ -d all-reports ] && [ -n "$(ls -A all-reports 2>/dev/null)" ]; then
             zip -r reports.zip all-reports
           else
