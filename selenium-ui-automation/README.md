@@ -63,4 +63,19 @@ mvn -pl selenium-ui-automation allure:serve
 
 ## Continuous integration
 
-The GitHub Actions workflow builds the Maven reactor on pushes and pull requests. It runs the browser tests across a **Chrome and Firefox matrix** when the repository has `TEST_USERNAME` and `TEST_PASSWORD` secrets configured, using headless browsers, and uploads each browser's Allure results as a separate workflow artifact (`allure-results-chrome`, `allure-results-firefox`).
+Three workflows live under `.github/workflows/`:
+
+- **`selenium-ui-automation.yml`** – runs on pushes to `main` and on pull requests that touch the module. It builds the Maven reactor, runs the tests across a **Chrome and Firefox matrix** (headless) when credentials are configured, publishes test results as PR check annotations, and uploads Allure results and Surefire reports as artifacts.
+- **`selenium-ui-automation_ManualJob.yml`** – triggered manually (`workflow_dispatch`).
+- **`selenium-ui-automation_WeeklyJob.yml`** – runs on a weekly schedule (Sundays, 06:00 UTC / 11:30 IST) and can also be triggered manually.
+
+All workflows cancel superseded runs, time out after 30 minutes, and run tests only when the `TEST_USERNAME` and `TEST_PASSWORD` secrets are present (otherwise the test step is skipped with a helpful message). Chrome and Firefox are pre-installed on the runner and Selenium Manager resolves the matching drivers automatically, so no driver download step is needed.
+
+### Email reporting
+
+The **manual** and **weekly** workflows generate the Allure HTML report (even on failure), then an `email-report` job bundles every artifact into `reports.zip` and emails it to `prasadgm80@gmail.com`. To enable it, add two repository secrets:
+
+- `MAIL_USERNAME` – the Gmail address used to send mail.
+- `MAIL_PASSWORD` – a Gmail **App Password** (not your account password; create one under Google Account → Security → App passwords).
+
+If these secrets are absent, the email step is skipped automatically and the reports remain available as workflow artifacts.
