@@ -1,0 +1,77 @@
+name: REST Assured API Automation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'restassured-api-automation/**'
+      - '.github/workflows/restassured-api-automation.yml'
+  pull_request:
+    paths:
+      - 'restassured-api-automation/**'
+      - '.github/workflows/restassured-api-automation.yml'
+  workflow_dispatch:
+
+# Least-privilege token: read code, write check runs, annotate PRs with test results.
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+# Cancel older runs for the same branch/PR when a new commit is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: API Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      API_USERNAME: ${{ secrets.API_USERNAME }}
+      API_PASSWORD: ${{ secrets.API_PASSWORD }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      # Reports only whether the secrets reached this run, never their values.
+      - name: Check API credentials
+        run: |
+          if [ -n "$API_USERNAME" ] && [ -n "$API_PASSWORD" ]; then
+            echo "Credentials detected: tests will run."
+          else
+            echo "::warning::API_USERNAME/API_PASSWORD are empty in this run. Add them as Actions *repository* secrets to enable the API tests."
+          fi
+
+      - name: Run API tests and build Cucumber report
+        if: ${{ env.API_USERNAME != '' && env.API_PASSWORD != '' }}
+        run: mvn --batch-mode --no-transfer-progress -pl restassured-api-automation -am verify
+
+      - name: Skip API tests when credentials are not configured
+        if: ${{ env.API_USERNAME == '' || env.API_PASSWORD == '' }}
+        run: echo "Set API_USERNAME and API_PASSWORD repository secrets to enable the API tests."
+
+      - name: Publish test results
+        if: ${{ always() && env.API_USERNAME != '' && env.API_PASSWORD != '' }}
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: restassured-api-automation/target/surefire-reports/*.xml
+          check_name: API Test Results
+          fail_on_failure: false
+
+      - name: Upload Cucumber HTML report
+        if: ${{ always() && env.API_USERNAME != '' && env.API_PASSWORD != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-html-report
+          path: restassured-api-automation/target/cucumber-html-reports
+          if-no-files-found: warn
+          retention-days: 14
