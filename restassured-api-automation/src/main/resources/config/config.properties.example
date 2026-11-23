@@ -1,0 +1,11 @@
+# Base URL of the EventHub API under test.
+base.uri=https://api.eventhub.rahulshettyacademy.com/api
+
+# Credentials used to log in and obtain a JWT bearer token.
+# The account must already be registered on EventHub (POST /auth/register).
+# Environment variables API_USERNAME / API_PASSWORD override these values.
+api.username=student@example.com
+******
+
+# Seconds REST Assured waits for a response before timing out.
+http.timeout.seconds=30
